@@ -1,20 +1,31 @@
 import { useState } from 'react';
+import type { ChangeEvent } from 'react';
+import type { PlayerSymbol } from '../types/game';
 
 interface PlayerProps {
   initialName: string;
-  symbol: string;
+  symbol: PlayerSymbol;
   isActive: boolean;
+  onNameChange: (symbol: PlayerSymbol, newName: string) => void;
 }
 
-export default function Player({ initialName, symbol, isActive }: PlayerProps) {
+export default function Player({
+  initialName,
+  symbol,
+  isActive,
+  onNameChange,
+}: PlayerProps) {
   const [playerName, setPlayerName] = useState(initialName);
   const [isEditing, setIsEditing] = useState(false);
 
   const toggleEditing = () => {
     setIsEditing((prev) => !prev);
+    if (isEditing) {
+      onNameChange(symbol, playerName);
+    }
   };
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
     setPlayerName(e.target.value);
   };
 
@@ -29,7 +40,6 @@ export default function Player({ initialName, symbol, isActive }: PlayerProps) {
               required
               value={playerName}
             />
-            <input type='text' value={symbol} />
           </>
         ) : (
           <>

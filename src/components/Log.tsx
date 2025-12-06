@@ -1,6 +1,10 @@
-import { Turn } from '../App';
+import type { Turn } from '../types/game';
 
-export default function Log({ turns }: { turns: Turn[] }) {
+type LogProps = {
+  turns: Turn[];
+};
+
+export default function Log({ turns }: LogProps) {
   return (
     <ol id='log'>
       {turns.map((turn, index) => {

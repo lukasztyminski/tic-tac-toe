@@ -1,7 +1,7 @@
-import { PlayerSymbol } from '../App';
+import type { GameBoardState } from '../types/game';
 
 type GameBoardProps = {
-  board: PlayerSymbol[][];
+  board: GameBoardState;
   onSelectSquare: (rowIndex: number, colIndex: number) => void;
 };
 

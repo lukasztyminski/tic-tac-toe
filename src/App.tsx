@@ -1,24 +1,28 @@
 import { useState } from 'react';
 import GameBoard from './components/GameBoard';
-import Player from './components/Player';
-import Log from './components/Log';
-import { WINNING_COMBINATIONS } from './utils/winning-combinations';
 import GameOver from './components/GameOver';
+import Log from './components/Log';
+import Player from './components/Player';
+import { WINNING_COMBINATIONS } from './utils/winning-combinations';
+import type {
+  GameBoardState,
+  PlayerNames,
+  PlayerSymbol,
+  Turn,
+} from './types/game';
 
-type PlayerSymbol = 'X' | 'O' | null;
-
-const initialGameBoard: PlayerSymbol[][] = [
+const INITIAL_GAME_BOARD = [
   [null, null, null],
   [null, null, null],
   [null, null, null],
-];
+] satisfies GameBoardState;
 
-interface Turn {
-  square: { row: number; col: number };
-  player: PlayerSymbol;
-}
+const INITIAL_PLAYERS: PlayerNames = {
+  X: 'Player 1',
+  O: 'Player 2',
+};
 
-function deriveActivePlayer(gameTurns: Turn[]): PlayerSymbol {
+function deriveActivePlayer(gameTurns: readonly Turn[]): PlayerSymbol {
   let currentPlayer: PlayerSymbol = 'X';
   if (gameTurns.length > 0 && gameTurns[0].player === 'X') {
     currentPlayer = 'O';
@@ -26,20 +30,21 @@ function deriveActivePlayer(gameTurns: Turn[]): PlayerSymbol {
   return currentPlayer;
 }
 
-function App() {
-  const [gameTurns, setGameTurns] = useState<Turn[]>([]);
-
-  let gameBoard = initialGameBoard;
+function deriveGameBoard(gameTurns: readonly Turn[]): GameBoardState {
+  const gameBoard: GameBoardState = [
+    ...INITIAL_GAME_BOARD.map((row) => [...row]),
+  ];
 
   for (const turn of gameTurns) {
     const { square, player } = turn;
     const { row, col } = square;
     gameBoard[row][col] = player;
   }
+  return gameBoard;
+}
 
-  const activePlayer = deriveActivePlayer(gameTurns);
-
-  let winner: PlayerSymbol = null;
+function deriveWinner(gameBoard: GameBoardState, players: PlayerNames) {
+  let winningPlayer = undefined;
 
   for (const combination of WINNING_COMBINATIONS) {
     const firstSquareSymbol =
@@ -54,19 +59,42 @@ function App() {
       firstSquareSymbol === secondSquareSymbol &&
       firstSquareSymbol === thirdSquareSymbol
     ) {
-      winner = firstSquareSymbol;
+      winningPlayer = players[firstSquareSymbol];
     }
   }
 
+  return winningPlayer;
+}
+
+function App() {
+  const [players, setPlayers] = useState<PlayerNames>(INITIAL_PLAYERS);
+  const [gameTurns, setGameTurns] = useState<Turn[]>([]);
+
+  const gameBoard = deriveGameBoard(gameTurns);
+  const activePlayer = deriveActivePlayer(gameTurns);
+  const winner = deriveWinner(gameBoard, players);
+  const hadDraw = gameTurns.length === 9 && !winner;
+
   const handleSelectSquare = (rowIndex: number, colIndex: number) => {
     setGameTurns((prevTurns) => {
-      const activePlayer = deriveActivePlayer(prevTurns);
+      const currentPlayer = deriveActivePlayer(prevTurns);
       const updatedTurns = [
-        { square: { row: rowIndex, col: colIndex }, player: activePlayer },
+        { square: { row: rowIndex, col: colIndex }, player: currentPlayer },
         ...prevTurns,
       ];
       return updatedTurns;
     });
+  };
+
+  const handleRematch = () => {
+    setGameTurns([]);
+  };
+
+  const handlePlayerNameChange = (symbol: PlayerSymbol, newName: string) => {
+    setPlayers((prevPlayers) => ({
+      ...prevPlayers,
+      [symbol]: newName,
+    }));
   };
 
   return (
@@ -75,16 +103,20 @@ function App() {
         <ol id='players' className='highlight-player'>
           <Player
             isActive={activePlayer === 'X'}
-            initialName='Player 1'
+            initialName={INITIAL_PLAYERS.X}
             symbol='X'
+            onNameChange={handlePlayerNameChange}
           />
           <Player
             isActive={activePlayer === 'O'}
-            initialName='Player 2'
+            initialName={INITIAL_PLAYERS.O}
             symbol='O'
+            onNameChange={handlePlayerNameChange}
           />
         </ol>
-        {winner && <GameOver winner={winner} />}
+        {(winner || hadDraw) && (
+          <GameOver winner={winner} onRestart={handleRematch} />
+        )}
         <GameBoard board={gameBoard} onSelectSquare={handleSelectSquare} />
       </div>
       <Log turns={gameTurns} />
@@ -93,4 +125,3 @@ function App() {
 }
 
 export default App;
-export type { Turn, PlayerSymbol };
